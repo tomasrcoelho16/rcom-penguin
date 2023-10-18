@@ -12,9 +12,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         layerRole = LlTx;
     }
     else layerRole = LlRx;
-    
-   LinkLayer layer;
-    unsigned char fake[5] = {0x02,0x7E,0x05,0x7D,0x07};
 
     int llcloseDone = FALSE;
 
@@ -30,7 +27,8 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     case LlTx:
     {
         if(llopen(layer) == -1) return;
-        if(llwrite(fake,5) == -1) return;
+
+        if(llwrite(,sizeof(filename)) == -1) return;
         if(llclose(0) == -1) return;
         break;
     }

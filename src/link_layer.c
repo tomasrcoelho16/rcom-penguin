@@ -595,7 +595,7 @@ int llclose(int showStatistics)
             dc[4] = flag;
 
             UA[0] = flag;
-            UA[1] = 0x03;
+            UA[1] = 0x01;
             UA[2] = 0x07;
             UA[3] = UA[1] ^ UA[2];
             UA[4] = flag;
