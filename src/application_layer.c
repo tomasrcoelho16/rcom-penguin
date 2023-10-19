@@ -17,7 +17,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     else layerRole = LlRx;
     
     LinkLayer layer;
-    unsigned char fake[5] = {0x02,0x7E,0x05,0x7D,0x07};
     
     int llcloseDone = FALSE;
 
@@ -27,18 +26,37 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
    layer.baudRate = baudRate;
    layer.nRetransmissions = nTries;
    layer.timeout = timeout;
-
+    
     switch (layerRole)
     {
         case LlTx:
         {
+            int bytesSent = 0;
+            int bytesLeft = 997;
+            unsigned char packet[1000] = {0};
+            packet[0] = 0x02;
+            packet[1] = (997 >> 8) & 0xFF;
+            packet[2] = 997 & 0xFF; 
             //OPENING FILE
             FILE *file = fopen(filename,"r");
             fseek(file, 0, SEEK_END);
             fileSize = ftell(file);
             fseek(file, 0, SEEK_SET);
             if(llopen(layer) == -1) return;
-            if(llwrite(fake,5) == -1) return;
+            while(fileSize>0){ 
+                if(fileSize<997){ 
+                    bytesLeft= fileSize;
+                    packet[1] = (bytesLeft >> 8) & 0xFF;
+                    packet[2] = bytesLeft & 0xFF;
+                }
+                printf("ahm : %ld\n",fileSize);
+                fread(packet+3,1,bytesLeft,file);
+                if(llwrite(packet,sizeof(packet))== -1) break;
+                fseek(file,bytesLeft,bytesSent);
+                fileSize-=997;
+                bytesSent+=bytesLeft;
+            } 
+            if(fileSize>0) return;
             //
             //ControlPacket 1
             //creatingPacket(2,filename,fileSize);
@@ -58,12 +76,14 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             return;
             }
             printf("yoo\n");
-            unsigned char packet[27] = {0};
+            unsigned char packet[10000] = {0};
 
             int llreadPacketCounter = 0;
-
+            int packets=0;
             while ((llreadPacketCounter = llread(packet)) && (llcloseDone == FALSE)){
                 if (llreadPacketCounter == -1) return;
+                packets+= llreadPacketCounter;
+                printf("\n%i\n", packets);
             }
             break;
         }

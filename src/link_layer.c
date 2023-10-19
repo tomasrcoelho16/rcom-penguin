@@ -323,10 +323,9 @@ int llwrite(const unsigned char *buf, int bufSize)
             }
         }
         alarm(0);
-        printf("LEZGO\n");  
-        if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){ printf("yauza\n"); return sizeof(packet);} //RR1 ou RR0, aceite
-        else  state = START; //REJ0 ou REJ1, recusado
     }
+    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){ printf("yauza\n"); return sizeof(packet);} //RR1 ou RR0, aceite
+    else  state = START; //REJ0 ou REJ1, recusado
 
     return -1;
 }
@@ -342,27 +341,15 @@ int llread(unsigned char *packet)
         unsigned char controlByte = 0;
         unsigned char bcc2temp = 0;
         int packetCounter = 0;
-        
-        /*while (1){
-            bytes = read(fd, buf, 1);
-            buf[bytes] = '\0';
-            if (buf[0] != 0x00)
-                printf("var = 0x%02X\n", (unsigned int)(buf[0] & 0xFF));
-        }
-
-        return 0;*/
 
         while (state != STOP_STATE){
             bytes = read(fd, buf, 1);
             buf[bytes] = '\0';
-            if (buf[0] != 0x00)
-                printf("var = 0x%02X\n", (unsigned int)(buf[0] & 0xFF));
             switch(state){
                 case START:
                 {
                     if (buf[0] == 0x7E){
                         state = FLAG_RCV;
-                        //printf("flag\n");
                     }
                     break;
                 }
@@ -370,7 +357,6 @@ int llread(unsigned char *packet)
                 {
                     if (buf[0] == 0x03){
                         state = A_RCV;
-                        //printf("address\n");
                     }
                     else if (buf[0] != 0x7E) state = START;
                     break;
@@ -379,7 +365,6 @@ int llread(unsigned char *packet)
                 {
                     if (buf[0] == 0x00 && trama == 0){
                         state = C_RCV;
-                        //printf("control\n");
                         controlByte = buf[0];
                     }
                     else if (buf[0] == 0x40 && trama == 1) {
@@ -390,12 +375,8 @@ int llread(unsigned char *packet)
                     }*/
                     else if (buf[0] == 0x7E) state = FLAG_RCV;
                     else if (buf[0] == 0x0B){
-                        //printf("DISCONNECT RECEIVED ON CONTROL");
                         state = DISCONNECT;
                         controlByte = buf[0];
-                        //int bytesDisconnect = writeSU(fd,0x03, 0x0B);  
-                        //printf("%d DISCONNECT bytes written\n", bytesDisconnect);
-                        //return 0;
                     }
                     else {
                         state = START;
@@ -444,12 +425,10 @@ int llread(unsigned char *packet)
                         bcc2temp = packet[0];
                         printf("FIRST element BCC2: %X \n", bcc2temp); //0x02
                         for (int i = 1; i < packetCounter-1; i++){
-                            printf("element %i : %X\n", i, packet[i]);
+                            //printf("element %i : %X\n", i, packet[i]);
                             bcc2temp ^= packet[i];
 
                         }
-                        printf("%X temp\n", bcc2temp);
-                        printf("%X bcc2TOMASCOELHOHENRIQUEHENRIQUECOELHO\n", bcc2_byte);
                         if (bcc2temp != bcc2_byte){ // REJECTS
                             if (trama == 0){
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
@@ -480,7 +459,7 @@ int llread(unsigned char *packet)
                             if (trama == 0) trama = 1;
                             else if (trama == 1) trama = 0;
                             // mudar trama de 0 para 1 ou vice versa
-                            return packetCounter;
+                            return packetCounter-1;
                         }
                     }
                 break;
