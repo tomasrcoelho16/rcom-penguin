@@ -16,7 +16,7 @@
 
 #define BUF_SIZE 5
 #define SET_SIZE 5
-
+#define BAUDRATE B38400
 #define flag 0x7E
 #define adress 0x03
 
@@ -59,10 +59,41 @@ int writeSU(int fd, unsigned char Address, unsigned char Control){
 ////////////////////////////////////////////////
 int llopen(LinkLayer connectionParameters)
 {   
+    printf("yo\n");
     fd = open( connectionParameters.serialPort, O_RDWR | O_NOCTTY);
+    if (fd < 0) {
+        perror(connectionParameters.serialPort);
+        return -1; 
+    }
+
+    struct termios oldtio;
+    struct termios newtio;
+
+    if (tcgetattr(fd, &oldtio) == -1)
+    {
+        perror("tcgetattr");
+        exit(-1);
+    }
+
+    memset(&newtio, 0, sizeof(newtio));
+
+    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    newtio.c_iflag = IGNPAR;
+    newtio.c_oflag = 0;
+    newtio.c_lflag = 0;
+    newtio.c_cc[VTIME] = 0;
+    newtio.c_cc[VMIN] = 0;
+
+    tcflush(fd, TCIOFLUSH);
+
+    if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
+        perror("tcsetattr");
+        return -1;
+    }
+
     tries = connectionParameters.nRetransmissions;
     timeout = connectionParameters.timeout;
-     role = connectionParameters.role;
+    role = connectionParameters.role;
     switch(connectionParameters.role) {
         case LlTx:
         {
@@ -76,17 +107,15 @@ int llopen(LinkLayer connectionParameters)
             
             SystemState state = START;
 
-            sleep(1);
-
             (void)signal(SIGALRM, alarmHandler);    
 
             while(alarmCount<tries && state!=STOP_STATE){ 
-
+                //printf("ishere\n");
                 write(fd, set, SET_SIZE+1);
                 alarm(timeout);
                 alarmEnabled = TRUE;
-
                 while (state != STOP_STATE && alarmEnabled==TRUE){
+                    //printf("ishere\n");
                     bytes = read(fd, UA, 1);
                     if (UA[0] != 0x00) UA[bytes] = '\0';
                     switch(state){
@@ -126,8 +155,8 @@ int llopen(LinkLayer connectionParameters)
                     }
                 }
             }
-
-            if(state == START) printf("Deu merda mermao!\n");
+            printf("something\n");
+            if(state == START){ printf("Deu merda mermao!\n"); return -1;}
             else printf("cierto baby!\n");
             return 1;
             break;
@@ -521,7 +550,7 @@ int llclose(int showStatistics)
                     case FLAG_RCV:
                     {
                         //printf("CASE FLAG_RCV");
-                        if (buf[0] == 0x03){
+                        if (buf[0] == 0x01){
                             state = A_RCV;
                         }
                         else if (buf[0] != 0x7E){

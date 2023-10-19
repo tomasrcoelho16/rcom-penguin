@@ -66,11 +66,11 @@ int main(int argc, char *argv[])
 {
     printf("\n");
 
-    system("socat -dd PTY,link=/dev/ttyS10,mode=777 PTY,link=/dev/emulatorTx,mode=777 &");
+    system("sudo socat -d  -d  PTY,link=/dev/ttyS10,mode=777   PTY,link=/dev/emulatorTx,mode=777 &");
     sleep(1);
     printf("\n");
 
-    system("socat -dd PTY,link=/dev/ttyS11,mode=777 PTY,link=/dev/emulatorRx,mode=777 &");
+    system("socat -d  -d  PTY,link=/dev/ttyS11,mode=777   PTY,link=/dev/emulatorRx,mode=777 &");
     sleep(1);
 
     printf("\n\n"
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     unsigned char rx2tx[BUF_SIZE] = {0};
     char rxStdin[BUF_SIZE] = {0};
 
-    CableMode cableMode = CableModeOn;
+    CableMode cableMode = CableModeOff;
     volatile int STOP = FALSE;
 
     printf("Cable ready\n");
