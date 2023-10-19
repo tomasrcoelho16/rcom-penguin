@@ -59,7 +59,6 @@ int writeSU(int fd, unsigned char Address, unsigned char Control){
 ////////////////////////////////////////////////
 int llopen(LinkLayer connectionParameters)
 {   
-    printf("yo\n");
     fd = open( connectionParameters.serialPort, O_RDWR | O_NOCTTY);
     if (fd < 0) {
         perror(connectionParameters.serialPort);
@@ -110,12 +109,10 @@ int llopen(LinkLayer connectionParameters)
             (void)signal(SIGALRM, alarmHandler);    
 
             while(alarmCount<tries && state!=STOP_STATE){ 
-                //printf("ishere\n");
                 write(fd, set, SET_SIZE+1);
                 alarm(timeout);
                 alarmEnabled = TRUE;
                 while (state != STOP_STATE && alarmEnabled==TRUE){
-                    //printf("ishere\n");
                     bytes = read(fd, UA, 1);
                     if (UA[0] != 0x00) UA[bytes] = '\0';
                     switch(state){
@@ -155,7 +152,6 @@ int llopen(LinkLayer connectionParameters)
                     }
                 }
             }
-            printf("something\n");
             if(state == START){ printf("Deu merda mermao!\n"); return -1;}
             else printf("cierto baby!\n");
             return 1;
@@ -177,7 +173,6 @@ int llopen(LinkLayer connectionParameters)
                         
                         case FLAG_RCV:
                         {
-                            //printf("CASE FLAG_RCV");
                             if (buf[0] == 0x03){
                                 state = A_RCV;
                             }
@@ -219,9 +214,7 @@ int llopen(LinkLayer connectionParameters)
                         {
                             
                             if (buf[0] == 0x7E) {
-                                printf("STOP STATE");
                                 int bytesUA = writeSU(fd, 0x03, 0x07);  
-                                printf("%d UA bytes written\n", bytesUA);
                                 state = STOP_STATE;
                             }
                             else {
@@ -273,8 +266,6 @@ int llwrite(const unsigned char *buf, int bufSize)
     packet[i++] = BCC2;
     packet[i] = flag; 
 
-    sleep(1);
-
     unsigned char UA[SET_SIZE+1] = {0};
     SystemState state = START;
     unsigned char Control;
@@ -324,7 +315,7 @@ int llwrite(const unsigned char *buf, int bufSize)
         }
         alarm(0);
     }
-    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){ printf("yauza\n"); return sizeof(packet);} //RR1 ou RR0, aceite
+    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){return sizeof(packet);} //RR1 ou RR0, aceite
     else  state = START; //REJ0 ou REJ1, recusado
 
     return -1;
@@ -398,7 +389,6 @@ int llread(unsigned char *packet)
                 }
                 case DISCONNECT:
                     {
-                    printf("disconnect case\n");
                     if (buf[0] == 0x7E){
                         state = STOP_STATE;
                         int llcloseOutput = llclose(0);
@@ -423,22 +413,20 @@ int llread(unsigned char *packet)
                     else {
                         unsigned char bcc2_byte = packet[packetCounter-1];
                         bcc2temp = packet[0];
-                        printf("FIRST element BCC2: %X \n", bcc2temp); //0x02
                         for (int i = 1; i < packetCounter-1; i++){
-                            //printf("element %i : %X\n", i, packet[i]);
                             bcc2temp ^= packet[i];
 
                         }
                         if (bcc2temp != bcc2_byte){ // REJECTS
                             if (trama == 0){
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
-                                printf("%d reject bytes written, TRAMA 0\n", bytesReject);
+                                //printf("%d reject bytes written, TRAMA 0\n", bytesReject);
                                 state = START;
                                 return -1;
                             }
                             else if (trama == 1){
                                 int bytesReject = writeSU(fd, 0x03, 0x81); //REJECT TRAMA 1
-                                printf("%d reject bytes written, TRAMA 1\n", bytesReject);
+                                //printf("%d reject bytes written, TRAMA 1\n", bytesReject);
                                 state = START;
                                 return -1;
                             }
@@ -450,11 +438,11 @@ int llread(unsigned char *packet)
                             state = STOP_STATE;
                             if (trama = 0){ // READY TO RECEIVE TRAMA 1, SEND RR1
                                 int bytesReceived = writeSU(fd, 0x03, 0x85);
-                                printf("%d received bytes written, ready for trama 1\n", bytesReceived);
+                                //printf("%d received bytes written, ready for trama 1\n", bytesReceived);
                             }
                             else{ // READY TO RECEIVE TRAMA 0, SEND RR0
                                 int bytesReceived = writeSU(fd, 0x03, 0x05);
-                                printf("%d received bytes written, ready for trama 1\n", bytesReceived);
+                                //printf("%d received bytes written, ready for trama 1\n", bytesReceived);
                             }
                             if (trama == 0) trama = 1;
                             else if (trama == 1) trama = 0;
@@ -509,9 +497,7 @@ int llclose(int showStatistics)
     switch (role){
         case LlRx:
         {
-             printf("inside llclose\n");
             int discResponse = writeSU(fd, 0x03, 0x0B);
-            printf("DISCONNECT WRITTEN\n");
             state = START;
             unsigned char buf[BUF_SIZE + 1] = {0};
 
@@ -528,7 +514,6 @@ int llclose(int showStatistics)
                     
                     case FLAG_RCV:
                     {
-                        //printf("CASE FLAG_RCV");
                         if (buf[0] == 0x01){
                             state = A_RCV;
                         }
@@ -574,7 +559,6 @@ int llclose(int showStatistics)
                     case BCC_OK:
                     {
                         if (buf[0] == 0x7E) {
-                            printf("UA bytes received correctly");
                             state = STOP_STATE;
                             llcloseDone = TRUE;
                         }
@@ -627,7 +611,6 @@ int llclose(int showStatistics)
                             }
                         case FLAG_RCV:
                         {
-                            printf("flag of disc\n");
                             if (conf[0] == 0x03) state = A_RCV;
                             else if (conf[0] != 0x7E) state = START;
                             break;
@@ -635,7 +618,6 @@ int llclose(int showStatistics)
                         
                         case A_RCV:
                         {
-                            printf("address of disc\n");
                             if (conf[0] == 0x0B){ state = C_RCV; Control = conf[0]; }
                             else if(conf[0] == flag) state = FLAG_RCV;
                             else state = START;
@@ -644,7 +626,6 @@ int llclose(int showStatistics)
                         
                         case C_RCV:
                         {
-                            printf("control of disc\n");
                             if (conf[0] == 0x03 ^ 0x0B) state = BCC_OK;
                             else if(conf[0] == flag) state = FLAG_RCV;
                             else state = START;
@@ -659,11 +640,11 @@ int llclose(int showStatistics)
                     }
                 }
             }
-            if(Control == 0x0B){ write(fd, UA, SET_SIZE); printf("disc rec\n"); return 1;}
+            if(Control == 0x0B){ write(fd, UA, SET_SIZE);  return 1;}
             return -1;
             break;
             }
     }
-
+    fclose(fd);
     return 1;
 }

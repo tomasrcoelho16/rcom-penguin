@@ -49,7 +49,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                     packet[1] = (bytesLeft >> 8) & 0xFF;
                     packet[2] = bytesLeft & 0xFF;
                 }
-                printf("ahm : %ld\n",fileSize);
                 fread(packet+3,1,bytesLeft,file);
                 if(llwrite(packet,sizeof(packet))== -1) break;
                 fseek(file,bytesLeft,bytesSent);
@@ -67,7 +66,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             //ControlPacker 3
             creatingPacket(3,);
             */
-
+            printf("DONE MFSSSSSSSSSSSSSSS\n");
             fclose(file); //adicionei isto ADUNNAODAODNAODNAOSDNAODN
 
             if(llclose(0) == -1) return;
@@ -78,7 +77,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             if (llopen(layer) == -1){
             return;
             }
-            printf("yoo\n");
 
             const char* filename = "penguin-received.gif";
 
@@ -100,15 +98,11 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 if (whiledone == 13) break;
                 if (llreadPacketCounter == -1) return;
 
-                printf("packet cenas: %X", packet[6]);
-
                 fseek(file, packets, SEEK_SET);
             
                 fwrite(packet+3,1, llreadPacketCounter, file);
                 packets+= (llreadPacketCounter-3);
-                printf("\n%i\n", packets);
             }
-            printf("WHILE DONES: %i", whiledone);
             fclose(file);
 
             break;
@@ -125,7 +119,6 @@ int creatingPacket(int control, const char* filename, long fileSize){
         {
             int size[2];
             integerToBytes(size,2,fileSize);
-            printf("try: %d\n", size[0]);
             unsigned char packet[strlen(filename) + 1];
             packet[0] = 0x02;
             packet[1] = 0x01;
