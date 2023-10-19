@@ -67,6 +67,9 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             //ControlPacker 3
             creatingPacket(3,);
             */
+
+            fclose(file); //adicionei isto ADUNNAODAODNAODNAOSDNAODN
+
             if(llclose(0) == -1) return;
             break;
         }
@@ -76,15 +79,38 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             return;
             }
             printf("yoo\n");
-            unsigned char packet[10000] = {0};
+
+            const char* filename = "penguin-received.gif";
+
+            FILE* file = fopen(filename, "wb+");
+            if (file == NULL) {
+                perror("error opening file");
+                return 1;
+            }
+
+            unsigned char packet[1050] = {0};
 
             int llreadPacketCounter = 0;
             int packets=0;
-            while ((llreadPacketCounter = llread(packet)) && (llcloseDone == FALSE)){
+
+            int whiledone = 0;
+
+            while ((llreadPacketCounter = llread(packet))){ //removi o llcloseDone
+                whiledone++;
+                if (whiledone == 13) break;
                 if (llreadPacketCounter == -1) return;
-                packets+= llreadPacketCounter;
+
+                printf("packet cenas: %X", packet[6]);
+
+                fseek(file, packets, SEEK_SET);
+            
+                fwrite(packet+3,1, llreadPacketCounter, file);
+                packets+= (llreadPacketCounter-3);
                 printf("\n%i\n", packets);
             }
+            printf("WHILE DONES: %i", whiledone);
+            fclose(file);
+
             break;
         }
     }
