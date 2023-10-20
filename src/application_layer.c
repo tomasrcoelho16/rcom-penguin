@@ -61,6 +61,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             int maxBytestoSend = MAX_PAYLOAD_SIZE-3;
             //OPENING FILE
             FILE *file = fopen(filename,"r");
+
+            if (file == NULL) {
+                perror("error opening file");
+                return ;
+            }
+
             fseek(file, 0, SEEK_END);
             fileSize = ftell(file);
             fseek(file, 0, SEEK_SET);
@@ -105,35 +111,37 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             int controlpacketSize = llread(packet);
             //packet[0] = control
             //packet[1] = dizer q é tamanho
-            int i = 2;
+            int i = 0;
+            i++;
+            i++;
             char fileSizeBytesNeeded = packet[2];
+            i++;
             i += fileSizeBytesNeeded;
             i++; //dizer q é o nome do ficheiro
-            char fileNameBytesNeeded = packet[i];
-            i++; // i está na posiçao que começa o fileName
+            char fileNameBytesNeeded = packet[6];
+            printf("fileName size: %i", fileNameBytesNeeded);
+            i++; // i está na posiçao que começa o fileName LENGTH
+            printf("i: %i", i);
             char* filenameReceived = (char*)malloc(fileNameBytesNeeded);
+            printf("packet i : %c", packet[i+9]);
             memcpy(filenameReceived, packet+i, fileNameBytesNeeded);
 
-            /*char* filename = (unsigned char*)malloc(fileNameBytesNeeded);
-            //char a[4] = {'r','e','c','-'};
-
             //memcpy(filename, a, 4);
-            memcpy(filename, packet+i, fileNameBytesNeeded);
+            //memcpy(filename, packet+i, fileNameBytesNeeded);
 
             //unsigned char* lastPeriod = (unsigned char*) strrchr((unsigned char)packet, '.');
-            if (lastPeriod == NULL){ // ficheiro sem extensao
+            /*if (lastPeriod == NULL){ // ficheiro sem extensao
 
             }
-            else { // ficheiro normal
-                char sizeUntilPeriod = lastPeriod - (packet+i);
-                char sizeAfterPeriod = fileNameBytesNeeded - sizeUntilPeriod - 1;
-                strncpy(filename, packet+i, sizeUntilPeriod);
-                strcpy(filename + sizeUntilPeriod, "-received");
-                strncpy(filename + sizeUntilPeriod + 9, packet+i+fileNameBytesNeeded-sizeAfterPeriod-1, sizeAfterPeriod+1);
+            else { // ficheiro normal*/
+            /*char sizeUntilPeriod = lastPeriod - (packet+i);
+            char sizeAfterPeriod = fileNameBytesNeeded - sizeUntilPeriod - 1;
+            strncpy(filename, packet+i, sizeUntilPeriod);
+            strcpy(filename + sizeUntilPeriod, "-received");
+            strncpy(filename + sizeUntilPeriod + 9, packet+i+fileNameBytesNeeded-sizeAfterPeriod-1, sizeAfterPeriod+1);*/
 
-            }
 
-            // -received -> 9 bytes*/
+            // -received -> 9 bytes
             
             
             /*char* directory = "received/";
@@ -145,7 +153,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             
 
 
-            FILE* file = fopen(filename, "wb+");
+            FILE* file = fopen(filenameReceived, "wb+");
             if (file == NULL) {
                 perror("error opening file");
                 return ;
