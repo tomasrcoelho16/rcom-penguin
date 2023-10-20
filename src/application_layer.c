@@ -28,7 +28,8 @@ unsigned char* controlPacket(int control,const char* filename, long fileSize, in
     for(int j = 0; j<strlen(filename);j++){
         packeto[i++] = filename[j];
     }
-    *ahm = i-1;
+    packeto[i] = '\0';
+    *ahm = i;
     return packeto;
 }
 

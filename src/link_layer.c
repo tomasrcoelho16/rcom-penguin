@@ -245,7 +245,6 @@ int llwrite(const unsigned char *buf, int bufSize)
         if(buf[i] == 0x7E || buf[i] == 0x7D) aMais++;
         BCC2 = BCC2 ^ buf[i];
     }
-    printf("BCC2: %02X\n", BCC2);
     if(BCC2 == 0x7E || BCC2 == 0x7D) bccflag++;
 
     unsigned char packet[bufSize+aMais+6+bccflag]; 
