@@ -6,6 +6,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+unsigned char* controlPacket(const char* filename, long fileSize, int* ahm){
+    long size = fileSize;
+    int bytesRequired=0;
+    while(fileSize>0){
+        fileSize >>= 8;
+        bytesRequired++;
+    }
+    unsigned char* packeto = (unsigned char*)malloc(2+3+strlen(filename)+bytesRequired);
+    packeto[0] = 0x02;
+    packeto[1] = 0;
+    packeto[2] = bytesRequired;
+    int i = 3;
+    while(bytesRequired>0){
+        packeto[i] = (size >> 8*(bytesRequired-1)) & 0xFF;
+        i++;
+        bytesRequired--;
+        }
+    packeto[i++] = 0x01;
+    packeto[i++] = strlen(filename);
+    for(int j = 0; j<strlen(filename);j++){
+        packeto[i++] = filename[j];
+    }
+    *ahm = i-1;
+    return packeto;
+}
+
 void applicationLayer(const char *serialPort, const char *role, int baudRate,
                       int nTries, int timeout, const char *filename)
 {
@@ -31,41 +57,36 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     {
         case LlTx:
         {
-            int bytesSent = 0;
-            int bytesLeft = 997;
-            unsigned char packet[1000] = {0};
-            packet[0] = 0x02;
-            packet[1] = (997 >> 8) & 0xFF;
-            packet[2] = 997 & 0xFF; 
+            int offset = 0;
+            int maxBytestoSend = 997;
+            //unsigned char packet = NULL;
             //OPENING FILE
             FILE *file = fopen(filename,"r");
             fseek(file, 0, SEEK_END);
             fileSize = ftell(file);
             fseek(file, 0, SEEK_SET);
             if(llopen(layer) == -1) return;
+
+            int size = 0;
+            unsigned char* packeto = controlPacket(filename,fileSize, &size);
+            if(llwrite(packeto,size)== -1) return;
+            free(packeto);
             while(fileSize>0){ 
-                if(fileSize<997){ 
-                    bytesLeft= fileSize;
-                    packet[1] = (bytesLeft >> 8) & 0xFF;
-                    packet[2] = bytesLeft & 0xFF;
+                if(fileSize<maxBytestoSend){ 
+                    maxBytestoSend= fileSize;
                 }
-                fread(packet+3,1,bytesLeft,file);
-                if(llwrite(packet,sizeof(packet))== -1) break;
-                fseek(file,bytesLeft,bytesSent);
-                fileSize-=997;
-                bytesSent+=bytesLeft;
+                unsigned char* packet = (unsigned char*)malloc(maxBytestoSend+3);
+                packet[0] = 0x01;
+                packet[1] = (maxBytestoSend >> 8) & 0xFF;
+                packet[2] = maxBytestoSend & 0xFF; 
+                fread(packet+3,1,maxBytestoSend,file);
+                if(llwrite(packet,maxBytestoSend+3)== -1) break;
+                fseek(file,maxBytestoSend,offset);
+                fileSize-=maxBytestoSend;
+                offset+=maxBytestoSend;
+                free(packet);
             } 
             if(fileSize>0) return;
-            //
-            //ControlPacket 1
-            //creatingPacket(2,filename,fileSize);
-            /*while(fileSize!=0){
-                //DATA 
-                creatingPacket(1, filename);
-            }
-            //ControlPacker 3
-            creatingPacket(3,);
-            */
             printf("DONE MFSSSSSSSSSSSSSSS\n");
             fclose(file); //adicionei isto ADUNNAODAODNAODNAOSDNAODN
 
@@ -86,7 +107,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 return 1;
             }
 
-            unsigned char packet[1050] = {0};
+            unsigned char packet[MAX_PAYLOAD_SIZE+1] = {0};
 
             int llreadPacketCounter = 0;
             int packets=0;
@@ -95,12 +116,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
 
             while ((llreadPacketCounter = llread(packet))){ //removi o llcloseDone
                 whiledone++;
-                if (whiledone == 13) break;
+                if (whiledone == 14) break;
                 if (llreadPacketCounter == -1) return;
 
                 fseek(file, packets, SEEK_SET);
             
-                fwrite(packet+3,1, llreadPacketCounter, file);
+                fwrite(packet+3,1, llreadPacketCounter-3, file);
                 packets+= (llreadPacketCounter-3);
             }
             fclose(file);
@@ -110,44 +131,4 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
     }
 }
 
-int creatingPacket(int control, const char* filename, long fileSize){
-    switch(control){
-        case 1: // DATA
 
-            break;
-        case 2: // START
-        {
-            int size[2];
-            integerToBytes(size,2,fileSize);
-            unsigned char packet[strlen(filename) + 1];
-            packet[0] = 0x02;
-            packet[1] = 0x01;
-            packet[2] = strlen(filename);
-            int i = 0;
-            while(i<strlen(filename)+1){ packet[i+3] = filename[i]; i++;}
-            i=0;
-            while(i<sizeof(packet)-1)printf("%x\n", packet[i++]);
-            break;
-        }
-        case 3: // END
-            
-            break;
-    }
-}
-
-int calculateSizeBytes(int size) {
-    int bytesRequired = 0;
-
-    while (size > 0) {
-        size >>= 8; // Shift right by 8 bits (1 byte)
-        bytesRequired++;
-    }
-
-    return (bytesRequired == 0) ? 1 : bytesRequired;
-}
-
-void integerToBytes(int* bytes, int numBytes, int value) {
-    for (int i = 0; i < numBytes; i++) {
-        bytes[i] = (value >> (8 * (numBytes - 1 - i))) & 0xFF;
-    }
-}
