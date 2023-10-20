@@ -424,7 +424,6 @@ int llread(unsigned char *packet)
                     }
                     else {
                         unsigned char bcc2_byte = packet[packetCounter-1];
-                        printf("modasuka:%02X\n",bcc2_byte);
                         bcc2temp = packet[0];
                         for (int i = 1; i < packetCounter-1; i++){
                             bcc2temp ^= packet[i];
@@ -433,9 +432,6 @@ int llread(unsigned char *packet)
                         if (bcc2temp != bcc2_byte){ // REJECTS
                             if (trama == 0){
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
-                                printf("%02X\n", bcc2_byte);
-                                printf("temp:%02X\n", bcc2temp);
-                                printf("yo:%02X\n", packet[packetCounter-1]);
                                 printf("%d reject bytes written, TRAMA 0\n", bytesReject);
                                 state = START;
                                 return -1;

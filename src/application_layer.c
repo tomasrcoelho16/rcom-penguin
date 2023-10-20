@@ -119,40 +119,15 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             i++;
             i += fileSizeBytesNeeded;
             i++; //dizer q é o nome do ficheiro
-            char fileNameBytesNeeded = packet[6];
+            char fileNameBytesNeeded = packet[i];
             printf("fileName size: %i", fileNameBytesNeeded);
             i++; // i está na posiçao que começa o fileName LENGTH
             printf("i: %i", i);
-            char* filenameReceived = (char*)malloc(fileNameBytesNeeded);
+            char* filenameReceived = (char*)malloc(fileNameBytesNeeded+9);
             printf("packet i : %c", packet[i+9]);
-            memcpy(filenameReceived, packet+i, fileNameBytesNeeded);
-
-            //memcpy(filename, a, 4);
-            //memcpy(filename, packet+i, fileNameBytesNeeded);
-
-            //unsigned char* lastPeriod = (unsigned char*) strrchr((unsigned char)packet, '.');
-            /*if (lastPeriod == NULL){ // ficheiro sem extensao
-
-            }
-            else { // ficheiro normal*/
-            /*char sizeUntilPeriod = lastPeriod - (packet+i);
-            char sizeAfterPeriod = fileNameBytesNeeded - sizeUntilPeriod - 1;
-            strncpy(filename, packet+i, sizeUntilPeriod);
-            strcpy(filename + sizeUntilPeriod, "-received");
-            strncpy(filename + sizeUntilPeriod + 9, packet+i+fileNameBytesNeeded-sizeAfterPeriod-1, sizeAfterPeriod+1);*/
-
-
-            // -received -> 9 bytes
-            
-            
-            /*char* directory = "received/";
-            char* fullFilePath;
-            fullFilePath = (char*)malloc(strlen(directory) + fileNameBytesNeeded + 1);
-
-            strcopy(fullFilePath, directory);
-            strcat(fullFilePath, filenameReceived);*/
-            
-
+            memcpy(filenameReceived, packet+i, fileNameBytesNeeded-4);
+            strcat(filenameReceived + (fileNameBytesNeeded-4), "-received");
+            memcpy(filenameReceived + (fileNameBytesNeeded - 4 + 9), packet+i+(fileNameBytesNeeded-4), 4);
 
             FILE* file = fopen(filenameReceived, "wb+");
             if (file == NULL) {
@@ -172,7 +147,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             }
             fclose(file);
             free(filenameReceived);
-
             break;
         }
     }
