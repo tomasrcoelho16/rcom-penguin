@@ -26,7 +26,7 @@ int bytes;
 int alarmEnabled = FALSE;
 int timeout;
 int tries;
-
+unsigned char trama = 0;
 typedef enum {
 START, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP_STATE, DADOS, VERIFICATION_7D, BCC1_OK, BCC2_CHECK, BCC2_RECEIVED, DISCONNECT
 } SystemState;
@@ -248,7 +248,7 @@ int llwrite(const unsigned char *buf, int bufSize)
     unsigned char packet[bufSize+aMais+6];
     packet[0]= flag;
     packet[1]= adress;
-    packet[2]= 0x00; // frame control [0x40,0x00]
+    packet[2]= trama ? 0x40 : 0x00; // frame control [0x40,0x00]
     packet[3]=packet[2] ^ packet[1]; 
     int i = 4;
     int b = 0;
@@ -315,7 +315,11 @@ int llwrite(const unsigned char *buf, int bufSize)
         }
         alarm(0);
     }
-    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){return sizeof(packet);} //RR1 ou RR0, aceite
+    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){
+        if(trama == 0) trama = 1;
+        else trama = 0;
+        return sizeof(packet);
+        } //RR1 ou RR0, aceite
     else  state = START; //REJ0 ou REJ1, recusado
 
     return -1;
@@ -328,7 +332,6 @@ int llread(unsigned char *packet)
 {
         state = START;
         unsigned char buf[BUF_SIZE + 1] = {0};
-        unsigned char trama = 0;
         unsigned char controlByte = 0;
         unsigned char bcc2temp = 0;
         int packetCounter = 0;
@@ -420,13 +423,13 @@ int llread(unsigned char *packet)
                         if (bcc2temp != bcc2_byte){ // REJECTS
                             if (trama == 0){
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
-                                //printf("%d reject bytes written, TRAMA 0\n", bytesReject);
+                                printf("%d reject bytes written, TRAMA 0\n", bytesReject);
                                 state = START;
                                 return -1;
                             }
                             else if (trama == 1){
                                 int bytesReject = writeSU(fd, 0x03, 0x81); //REJECT TRAMA 1
-                                //printf("%d reject bytes written, TRAMA 1\n", bytesReject);
+                                printf("%d reject bytes written, TRAMA 1\n", bytesReject);
                                 state = START;
                                 return -1;
                             }
@@ -436,13 +439,13 @@ int llread(unsigned char *packet)
                         else {
                             // write RECEIVED POGGERS
                             state = STOP_STATE;
-                            if (trama = 0){ // READY TO RECEIVE TRAMA 1, SEND RR1
+                            if (trama == 0){ // READY TO RECEIVE TRAMA 1, SEND RR1
                                 int bytesReceived = writeSU(fd, 0x03, 0x85);
                                 //printf("%d received bytes written, ready for trama 1\n", bytesReceived);
                             }
                             else{ // READY TO RECEIVE TRAMA 0, SEND RR0
                                 int bytesReceived = writeSU(fd, 0x03, 0x05);
-                                //printf("%d received bytes written, ready for trama 1\n", bytesReceived);
+                                //printf("%d received bytes written, ready for trama 0\n", bytesReceived);
                             }
                             if (trama == 0) trama = 1;
                             else if (trama == 1) trama = 0;

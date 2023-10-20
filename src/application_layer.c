@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-unsigned char* controlPacket(const char* filename, long fileSize, int* ahm){
+unsigned char* controlPacket(int control,const char* filename, long fileSize, int* ahm){
     long size = fileSize;
     int bytesRequired=0;
     while(fileSize>0){
@@ -14,7 +14,7 @@ unsigned char* controlPacket(const char* filename, long fileSize, int* ahm){
         bytesRequired++;
     }
     unsigned char* packeto = (unsigned char*)malloc(2+3+strlen(filename)+bytesRequired);
-    packeto[0] = 0x02;
+    packeto[0] = control;
     packeto[1] = 0;
     packeto[2] = bytesRequired;
     int i = 3;
@@ -58,8 +58,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         case LlTx:
         {
             int offset = 0;
-            int maxBytestoSend = 997;
-            //unsigned char packet = NULL;
+            int maxBytestoSend = MAX_PAYLOAD_SIZE-3;
             //OPENING FILE
             FILE *file = fopen(filename,"r");
             fseek(file, 0, SEEK_END);
@@ -68,7 +67,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             if(llopen(layer) == -1) return;
 
             int size = 0;
-            unsigned char* packeto = controlPacket(filename,fileSize, &size);
+            unsigned char* packeto = controlPacket(2,filename,fileSize, &size);
             if(llwrite(packeto,size)== -1) return;
             free(packeto);
             while(fileSize>0){ 
@@ -87,6 +86,8 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 free(packet);
             } 
             if(fileSize>0) return;
+            unsigned char* packetoFinal = controlPacket(3,filename,fileSize, &size);
+            if(llwrite(packetoFinal,size)== -1) return;
             printf("DONE MFSSSSSSSSSSSSSSS\n");
             fclose(file); //adicionei isto ADUNNAODAODNAODNAOSDNAODN
 
@@ -147,21 +148,16 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             FILE* file = fopen(filename, "wb+");
             if (file == NULL) {
                 perror("error opening file");
-                return 1;
+                return ;
             }
 
             int llreadPacketCounter = 0;
             int packets=0;
 
-            int whiledone = 0;
-
             while ((llreadPacketCounter = llread(packet))){ //removi o llcloseDone
-                whiledone++;
-                if (whiledone == 14) break;
+                if (packet[0] == 3){ printf("End of file. :)\n"); continue;}
                 if (llreadPacketCounter == -1) return;
-
                 fseek(file, packets, SEEK_SET);
-            
                 fwrite(packet+3,1, llreadPacketCounter-3, file);
                 packets+= (llreadPacketCounter-3);
             }
