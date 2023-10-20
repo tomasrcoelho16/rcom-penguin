@@ -239,14 +239,16 @@ int llwrite(const unsigned char *buf, int bufSize)
 {
     int aMais = 0;
     int BCC2 = 0x00;
+    int bccflag = 0;
 
     for(int i = 0;i<bufSize;i++){
         if(buf[i] == 0x7E || buf[i] == 0x7D) aMais++;
         BCC2 = BCC2 ^ buf[i];
     }
+    printf("BCC2: %02X\n", BCC2);
+    if(BCC2 == 0x7E || BCC2 == 0x7D) bccflag++;
 
-    unsigned char packet[bufSize+aMais+6]; 
-
+    unsigned char packet[bufSize+aMais+6+bccflag]; 
     packet[0]= flag;
     packet[1]= adress;
     packet[2]= trama ? 0x40 : 0x00; // frame control [0x40,0x00]
@@ -264,7 +266,14 @@ int llwrite(const unsigned char *buf, int bufSize)
             b++;
         } else{ packet[i++] = buf[b++];}
     }
-    packet[i++] = BCC2;
+    if(BCC2==0x7E){
+        packet[i++] =0x7D;
+        packet[i++] =0x5E;
+    } else if (BCC2==0x7D) {
+        packet[i++] =0x7D;
+        packet[i++] =0x5D;
+    } else packet[i++] = BCC2;
+    
     packet[i] = flag; 
 
     unsigned char UA[SET_SIZE+1] = {0};
@@ -427,6 +436,7 @@ int llread(unsigned char *packet)
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
                                 printf("%02X\n", bcc2_byte);
                                 printf("temp:%02X\n", bcc2temp);
+                                printf("yo:%02X\n", packet[packetCounter-1]);
                                 printf("%d reject bytes written, TRAMA 0\n", bytesReject);
                                 state = START;
                                 return -1;
