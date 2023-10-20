@@ -71,7 +71,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             if(llwrite(packeto,size)== -1) return;
             free(packeto);
             while(fileSize>0){ 
-                if(fileSize<maxBytestoSend){ 
+                if(fileSize<=maxBytestoSend){ 
                     maxBytestoSend= fileSize;
                 }
                 unsigned char* packet = (unsigned char*)malloc(maxBytestoSend+3);

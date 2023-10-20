@@ -245,7 +245,8 @@ int llwrite(const unsigned char *buf, int bufSize)
         BCC2 = BCC2 ^ buf[i];
     }
 
-    unsigned char packet[bufSize+aMais+6];
+    unsigned char packet[bufSize+aMais+6]; 
+
     packet[0]= flag;
     packet[1]= adress;
     packet[2]= trama ? 0x40 : 0x00; // frame control [0x40,0x00]
@@ -313,15 +314,15 @@ int llwrite(const unsigned char *buf, int bufSize)
                     }
             }
         }
-        alarm(0);
-    }
-    if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){
-        if(trama == 0) trama = 1;
-        else trama = 0;
-        return sizeof(packet);
+        if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){//RR1 ou RR0, aceite
+            if(trama == 0) trama = 1;
+            else trama = 0;
+            return sizeof(packet);
         } //RR1 ou RR0, aceite
-    else  state = START; //REJ0 ou REJ1, recusado
-
+        else  state = START; //REJ0 ou REJ1, recusado
+    }
+        alarm(0);
+    
     return -1;
 }
 
@@ -415,6 +416,7 @@ int llread(unsigned char *packet)
                     }
                     else {
                         unsigned char bcc2_byte = packet[packetCounter-1];
+                        printf("modasuka:%02X\n",bcc2_byte);
                         bcc2temp = packet[0];
                         for (int i = 1; i < packetCounter-1; i++){
                             bcc2temp ^= packet[i];
@@ -423,6 +425,8 @@ int llread(unsigned char *packet)
                         if (bcc2temp != bcc2_byte){ // REJECTS
                             if (trama == 0){
                                 int bytesReject = writeSU(fd, 0x03, 0x01); //REJECT TRAMA 0
+                                printf("%02X\n", bcc2_byte);
+                                printf("temp:%02X\n", bcc2temp);
                                 printf("%d reject bytes written, TRAMA 0\n", bytesReject);
                                 state = START;
                                 return -1;
@@ -480,7 +484,7 @@ int llread(unsigned char *packet)
                             }
                         else{ // READY TO RECEIVE TRAMA 0, SEND RR0
                             int bytesReceived = writeSU(fd, 0x03, 0x05);
-                            printf("%d received bytes written, ready for trama 1\n", bytesReceived);
+                            printf("%d received bytes written, ready for trama 0\n", bytesReceived);
                         }
                         return packetCounter;
                     }*/
