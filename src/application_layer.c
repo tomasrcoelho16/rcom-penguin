@@ -95,19 +95,60 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
         }
         case LlRx:
         {
+            unsigned char packet[MAX_PAYLOAD_SIZE+1] = {0};
+
             if (llopen(layer) == -1){
             return;
             }
 
-            const char* filename = "penguin-received.gif";
+            int controlpacketSize = llread(packet);
+            //packet[0] = control
+            //packet[1] = dizer q é tamanho
+            int i = 2;
+            char fileSizeBytesNeeded = packet[2];
+            i += fileSizeBytesNeeded;
+            i++; //dizer q é o nome do ficheiro
+            char fileNameBytesNeeded = packet[i];
+            i++; // i está na posiçao que começa o fileName
+            char* filenameReceived = (char*)malloc(fileNameBytesNeeded);
+            memcpy(filenameReceived, packet+i, fileNameBytesNeeded);
+
+            /*char* filename = (unsigned char*)malloc(fileNameBytesNeeded);
+            //char a[4] = {'r','e','c','-'};
+
+            //memcpy(filename, a, 4);
+            memcpy(filename, packet+i, fileNameBytesNeeded);
+
+            //unsigned char* lastPeriod = (unsigned char*) strrchr((unsigned char)packet, '.');
+            if (lastPeriod == NULL){ // ficheiro sem extensao
+
+            }
+            else { // ficheiro normal
+                char sizeUntilPeriod = lastPeriod - (packet+i);
+                char sizeAfterPeriod = fileNameBytesNeeded - sizeUntilPeriod - 1;
+                strncpy(filename, packet+i, sizeUntilPeriod);
+                strcpy(filename + sizeUntilPeriod, "-received");
+                strncpy(filename + sizeUntilPeriod + 9, packet+i+fileNameBytesNeeded-sizeAfterPeriod-1, sizeAfterPeriod+1);
+
+            }
+
+            // -received -> 9 bytes*/
+            
+            
+            /*char* directory = "received/";
+            char* fullFilePath;
+            fullFilePath = (char*)malloc(strlen(directory) + fileNameBytesNeeded + 1);
+
+            strcopy(fullFilePath, directory);
+            strcat(fullFilePath, filenameReceived);*/
+            
+
 
             FILE* file = fopen(filename, "wb+");
             if (file == NULL) {
                 perror("error opening file");
                 return 1;
             }
-
-            unsigned char packet[MAX_PAYLOAD_SIZE+1] = {0};
 
             int llreadPacketCounter = 0;
             int packets=0;
@@ -125,6 +166,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
                 packets+= (llreadPacketCounter-3);
             }
             fclose(file);
+            free(filenameReceived);
 
             break;
         }
