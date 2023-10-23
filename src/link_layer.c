@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
+#include <time.h>
 
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
@@ -19,6 +20,12 @@
 #define BAUDRATE B38400
 #define flag 0x7E
 #define adress 0x03
+
+
+clock_t start_time, end_time;
+double cpu_time_used;
+int n_packets = 0;
+int n_rejects = 0;
 
 int llcloseDone = FALSE;
 int alarmCount = 0;
@@ -96,6 +103,7 @@ int llopen(LinkLayer connectionParameters)
     switch(connectionParameters.role) {
         case LlTx:
         {
+            start_time = clock();
             unsigned char UA[SET_SIZE+1] = {0};
             unsigned char set[SET_SIZE+1] = {0};
             set[0] = flag;
@@ -323,11 +331,15 @@ int llwrite(const unsigned char *buf, int bufSize)
             }
         }
         if((Control == 0x85 || Control == 0x05) && state == STOP_STATE){//RR1 ou RR0, aceite
+            n_packets++;
             if(trama == 0) trama = 1;
             else trama = 0;
             return sizeof(packet);
         } //RR1 ou RR0, aceite
-        else  state = START; //REJ0 ou REJ1, recusado
+        else  {//REJ0 ou REJ1, recusado
+            state = START;
+            n_rejects++;
+        } 
     }
         alarm(0);
     
@@ -409,6 +421,7 @@ int llread(unsigned char *packet)
                         }
                         else{
                             printf("UA received correctly, shutting down...");
+
                         }
                         return 0;
                     }
@@ -652,7 +665,20 @@ int llclose(int showStatistics)
                     }
                 }
             }
-            if(Control == 0x0B){ write(fd, UA, SET_SIZE);  return 1;}
+            if(Control == 0x0B){
+                write(fd, UA, SET_SIZE);
+                if (showStatistics){
+                    end_time = clock();
+
+                    cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+
+                    printf("\n- Time Used: %f seconds\n", cpu_time_used);
+                    printf("- Number of packets: %i\n", n_packets);
+                    printf("- Size of Packet: %i\n", MAX_PAYLOAD_SIZE);
+                    printf("- Number of Rejects: %i\n", n_rejects);
+                } 
+                return 1;
+            }
             return -1;
             break;
             }

@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 {
     printf("\n");
 
-    system("sudo socat -d  -d  PTY,link=/dev/ttyS10,mode=777   PTY,link=/dev/emulatorTx,mode=777 &");
+    system("socat -d  -d  PTY,link=/dev/ttyS10,mode=777   PTY,link=/dev/emulatorTx,mode=777 &");
     sleep(1);
     printf("\n");
 

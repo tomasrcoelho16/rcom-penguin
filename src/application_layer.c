@@ -95,10 +95,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             if(fileSize>0) return;
             unsigned char* packetoFinal = controlPacket(3,filename,fileSize, &size);
             if(llwrite(packetoFinal,size)== -1) return;
-            printf("DONE MFSSSSSSSSSSSSSSS\n");
+            //printf("DONE MFSSSSSSSSSSSSSSS\n");
             fclose(file); //adicionei isto ADUNNAODAODNAODNAOSDNAODN
 
-            if(llclose(0) == -1) return;
+            if(llclose(1) == -1) return;
             break;
         }
         case LlRx:
@@ -120,11 +120,11 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate,
             i += fileSizeBytesNeeded;
             i++; //dizer q é o nome do ficheiro
             char fileNameBytesNeeded = packet[i];
-            printf("fileName size: %i", fileNameBytesNeeded);
+            //printf("fileName size: %i", fileNameBytesNeeded);
             i++; // i está na posiçao que começa o fileName LENGTH
-            printf("i: %i", i);
+            //printf("i: %i", i);
             char* filenameReceived = (char*)malloc(fileNameBytesNeeded+9);
-            printf("packet i : %c", packet[i+9]);
+            //printf("packet i : %c", packet[i+9]);
             memcpy(filenameReceived, packet+i, fileNameBytesNeeded-4);
             strcat(filenameReceived + (fileNameBytesNeeded-4), "-received");
             memcpy(filenameReceived + (fileNameBytesNeeded - 4 + 9), packet+i+(fileNameBytesNeeded-4), 4);
